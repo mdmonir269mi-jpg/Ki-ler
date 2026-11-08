@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock OTP Zone - NP Network</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Live Brand Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #0B0E11; /* Deep Premium Dark */
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #11161B;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #00A859;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="text-white antialiased min-h-screen flex flex-col items-center justify-start p-4 md:p-6 pb-20">
+
+    <!-- Glowing Top Neon Line -->
+    <div class="w-full max-w-lg h-[2px] bg-gradient-to-r from-transparent via-[#00A859] to-transparent mb-6 opacity-80"></div>
+
+    <!-- Custom Beautiful Copy Toast -->
+    <div id="copy-toast" class="fixed top-6 left-1/2 -translate-x-1/2 bg-[#00A859] text-white px-5 py-3 rounded-full text-xs font-bold shadow-2xl flex items-center gap-2 transition-all duration-300 opacity-0 pointer-events-none scale-90 z-50 border border-emerald-500/30">
+        <i class="fa-solid fa-circle-check text-base animate-bounce"></i>
+        <span id="toast-text">OTP Copied Successfully!</span>
+    </div>
+
+    <!-- Live Active Ranges Detail Modal -->
+    <div id="traffic-modal" class="fixed inset-0 bg-[#0B0E11] z-50 flex flex-col opacity-0 pointer-events-none transition-all duration-300 scale-100">
+        <!-- Modal Header -->
+        <div class="p-4 border-b border-gray-800/60 flex justify-between items-center bg-[#11161B] shrink-0">
+            <span id="modal-title" class="text-xs font-bold flex items-center gap-2">
+                <!-- Dynamic App icon and Title -->
+            </span>
+            <button onclick="closeTrafficModal()" class="bg-[#181E25] hover:bg-gray-800 border border-gray-800 text-gray-300 hover:text-white px-3 py-1.5 rounded-lg transition text-xs flex items-center gap-1">
+                ✕ Close
+            </button>
+        </div>
+        
+        <!-- Split View Container -->
+        <div class="flex-1 flex flex-col overflow-hidden h-full">
+            <!-- Slide 1 (Top Half): Countries/Ranges 2-Column Grid -->
+            <div class="h-1/2 flex flex-col border-b border-gray-800/60">
+                <div class="px-4 pt-3 text-[10px] text-gray-500 uppercase tracking-widest font-bold bg-[#11161B]/30 pb-1 shrink-0">
+                    Available Countries
+                </div>
+                <div id="modal-range-list" class="grid grid-cols-2 gap-3 p-4 overflow-y-auto flex-1 bg-[#11161B]/10 content-start">
+                    <!-- Dynamic range items -->
+                </div>
+            </div>
+            <!-- Slide 2 (Bottom Half): Allocated Numbers History Log -->
+            <div id="modal-active-session-container" class="h-1/2 overflow-y-auto bg-[#151A21]/30 p-4 flex flex-col gap-3">
+                <!-- Dynamic list -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="w-full max-w-lg flex flex-col gap-6">
+        
+        <!-- Header -->
+        <div class="flex flex-col items-center gap-3 text-center">
+            <div class="w-16 h-16 rounded-2xl bg-[#00A859]/10 border border-[#00A859]/30 flex items-center justify-center text-[#00A859] text-3xl shadow-lg shadow-[#00a85915] relative">
+                <i class="fa-solid fa-robot animate-bounce"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-black tracking-wider text-white uppercase">NP Network OTP Zone</h1>
+                <p class="text-xs text-gray-400 mt-1 font-medium tracking-wide">Automated Secure OTP Gateway</p>
+            </div>
+        </div>
+
+        <!-- API Error monitor -->
+        <div id="error-banner" class="hidden bg-red-950/50 border border-red-900/60 rounded-xl p-4 text-xs text-red-400 flex flex-col gap-2 shadow-lg">
+            <div class="flex justify-between items-center font-bold">
+                <span><i class="fa-solid fa-triangle-exclamation mr-1"></i> API connection Status:</span>
+                <button onclick="document.getElementById('error-banner').classList.add('hidden')" class="text-gray-400 hover:text-white">✕</button>
+            </div>
+            <p id="error-message">Error details...</p>
+        </div>
+
+        <!-- Search Panel -->
+        <div class="bg-[#11161B] border border-gray-800/80 rounded-2xl p-5 flex flex-col gap-3 shadow-xl">
+            <label class="text-[10px] text-[#00A859] font-bold uppercase tracking-wider block">Search Your Number</label>
+            <div class="relative group">
+                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[#00A859] group-focus-within:text-white transition-colors duration-300 text-xs">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </span>
+                <input type="text" id="search-input" onkeyup="filterCodes()" placeholder="আপনার নম্বরটি দিয়ে সার্চ করুন..." 
+                    class="w-full bg-[#181E25] border border-gray-800/80 focus:border-[#00A859] rounded-xl pl-11 pr-4 py-3.5 text-xs text-white focus:outline-none transition-all duration-300 placeholder-gray-500 focus:ring-1 focus:ring-[#00A859]/20">
+            </div>
+        </div>
+
+        <!-- Live Traffic Monitor Section -->
+        <div class="bg-[#11161B] border border-gray-800/80 rounded-2xl p-5 flex flex-col gap-4 shadow-xl">
+            <div class="flex justify-between items-center">
+                <label class="text-[10px] text-[#00A859] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                    <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                    </span>
+                    LIVE TRAFFIC MONITOR
+                </label>
+                <span class="text-[10px] text-gray-500 font-mono" id="traffic-ratio">Ratio: 0:0</span>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Facebook Traffic Card -->
+                <div onclick="openTrafficModal('facebook')" class="cursor-pointer bg-[#181E25] hover:bg-[#1E2732] border border-gray-800/40 hover:border-[#1877F2]/40 rounded-xl p-4 flex flex-col gap-1.5 relative overflow-hidden transition-all duration-300 active:scale-[0.98]">
+                    <div class="flex justify-between items-center z-10">
+                        <span class="text-xs font-bold text-gray-400 flex items-center gap-1.5">
+                            <i class="fa-brands fa-facebook text-[#1877F2]"></i> FB Traffic
+                        </span>
+                        <span id="fb-percentage" class="text-[10px] font-bold text-[#1877F2] bg-[#1877f2]/10 px-1.5 py-0.5 rounded">0%</span>
+                    </div>
+                    <div class="flex items-baseline gap-1 mt-1 z-10">
+                        <span id="fb-count-display" class="text-2xl font-black text-white">0</span>
+                        <span class="text-[10px] text-gray-500 uppercase tracking-wider">hits</span>
+                    </div>
+                    <div class="mt-2 z-10">
+                        <button class="w-full bg-[#1877F2]/10 hover:bg-[#1877F2]/20 border border-[#1877F2]/30 text-[10px] font-bold text-[#1877F2] py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all duration-200 shadow-sm">
+                            <span>Get & View Number</span>
+                            <i class="fa-solid fa-circle-arrow-right text-[11px] animate-pulse"></i>
+                        </button>
+                    </div>
+                    <div class="absolute bottom-0 left-0 h-[3px] bg-[#1877F2] transition-all duration-500" id="fb-progress-line" style="width: 0%"></div>
+                </div>
+
+                <!-- Instagram Traffic Card -->
+                <div onclick="openTrafficModal('instagram')" class="cursor-pointer bg-[#181E25] hover:bg-[#281E29] border border-gray-800/40 hover:border-[#E1306C]/40 rounded-xl p-4 flex flex-col gap-1.5 relative overflow-hidden transition-all duration-300 active:scale-[0.98]">
+                    <div class="flex justify-between items-center z-10">
+                        <span class="text-xs font-bold text-gray-400 flex items-center gap-1.5">
+                            <i class="fa-brands fa-instagram text-[#E1306C]"></i> IG Traffic
+                        </span>
+                        <span id="ig-percentage" class="text-[10px] font-bold text-[#E1306C] bg-[#e1306c]/10 px-1.5 py-0.5 rounded">0%</span>
+                    </div>
+                    <div class="flex items-baseline gap-1 mt-1 z-10">
+                        <span id="ig-count-display" class="text-2xl font-black text-white">0</span>
+                        <span class="text-[10px] text-gray-500 uppercase tracking-wider">hits</span>
+                    </div>
+                    <div class="mt-2 z-10">
+                        <button class="w-full bg-[#E1306C]/10 hover:bg-[#E1306C]/20 border border-[#E1306C]/30 text-[10px] font-bold text-[#E1306C] py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all duration-200 shadow-sm">
+                            <span>Get & View Number</span>
+                            <i class="fa-solid fa-circle-arrow-right text-[11px] animate-pulse"></i>
+                        </button>
+                    </div>
+                    <div class="absolute bottom-0 left-0 h-[3px] bg-gradient-to-r from-[#E1306C] to-[#C13584] transition-all duration-500" id="ig-progress-line" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Codes Feed Section -->
+        <div>
+            <div class="flex justify-between items-center mb-4 px-1">
+                <div class="flex items-center gap-2">
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </span>
+                    <h2 class="text-xs font-bold tracking-widest text-[#00A859] uppercase">LIVE CODES FEED</h2>
+                </div>
+                <div class="flex gap-2 items-center">
+                    <span id="live-indicator" class="text-[10px] text-emerald-500 bg-emerald-950/20 px-2 py-1 rounded border border-emerald-900/30">
+                        <i class="fa-solid fa-sync animate-spin mr-1"></i> Auto Syncing
+                    </span>
+                    <span id="code-count" class="text-[10px] text-gray-400 bg-[#11161B] px-2.5 py-1 rounded border border-gray-800/80 font-mono">0 active codes</span>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading-state" class="text-center py-12 text-gray-500 border border-dashed border-gray-800/80 rounded-xl bg-[#11161B]/50 mb-4 flex flex-col items-center justify-center gap-3">
+                <i class="fa-solid fa-circle-notch animate-spin text-2xl text-[#00A859]"></i>
+                <p class="text-xs text-gray-400">Syncing Live Database...</p>
+            </div>
+
+            <!-- No Data State -->
+            <div id="no-data" class="hidden text-center py-12 text-gray-500 border border-dashed border-gray-800/80 rounded-xl bg-[#11161B]/50 mb-4">
+                <i class="fa-solid fa-envelope-open text-2xl mb-2 block text-gray-600 animate-pulse"></i>
+                কোনো সক্রিয় কোড পাওয়া যায়নি। প্যানেলে ওটিপি আসা মাত্রই এখানে তা স্বয়ংক্রিয়ভাবে লোড হবে।
+            </div>
+
+            <!-- Feed Container -->
+            <div id="feed-container" class="flex flex-col gap-4">
+                <!-- Dynamic cards -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Script and API Logic -->
+    <script>
+        // =========================================================================
+        // ⚙️ [NP NETWORK CONFIGURATION - .cam]
+        // =========================================================================
+        const APP_CONFIG = {
+            API_TOKEN: "NP-6HXU732PNEATGVFM",
+            BASE_URL: "https://npnetworkbd.cam/api/user",
+
+            TELEGRAM_ENABLED: true,
+            BOT_TOKEN: "9168159119:AAFmg9tj8WKpvJ2mswXW5ipQjf3rQb0eZ7o", 
+            GROUP_CHAT_ID: "-1004483895054", 
+
+            BUTTON_TEXT: "🚀 Open Mini Bot",
+            MINI_BOT_URL: "t.me/Testnetbymahidbot/otpzone"
+        };
+        // =========================================================================
+
+        let activeFbRanges = [];
+        let activeIgRanges = [];
+        let activeSessionNumber = null;
+        let currentActiveApp = null;
+
+        let sentTelegramOtpKeys = new Set(JSON.parse(localStorage.getItem('sent_tg_otps') || "[]"));
+
+        function saveSentOtpKey(uniqueKey) {
+            sentTelegramOtpKeys.add(uniqueKey);
+            let arr = Array.from(sentTelegramOtpKeys);
+            if (arr.length > 200) arr = arr.slice(arr.length - 200);
+            localStorage.setItem('sent_tg_otps', JSON.stringify(arr));
+        }
+
+        async function sendOtpToTelegram(item, otpCode, appDetails, country) {
+            if (!APP_CONFIG.TELEGRAM_ENABLED) return;
+            const uniqueKey = `${item.number}_${otpCode}_${item.time || item.message}`;
+            if (sentTelegramOtpKeys.has(uniqueKey)) return;
+
+            const rawSms = item.message || "N/A";
+            const number = item.number || "Unknown";
+            
+            let timeStr = "Just Now";
+            if (item.time) {
+                const dateObj = new Date(item.time);
+                if (!isNaN(dateObj.getTime())) {
+                    timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                }
+            }
+
+            const telegramMessage = 
+`⚡ <b>NP NETWORK - NEW OTP RECEIVED</b> ⚡
+━━━━━━━━━━━━━━━━━━━━━━
+📱 <b>Phone Number:</b> <code>${number}</code>
+🌍 <b>Country:</b> <b>${country}</b>
+🏷️ <b>Service:</b> <b>${appDetails.name}</b>
+🔑 <b>OTP Code:</b> <code>${otpCode}</code>
+⏰ <b>Time:</b> ${timeStr}
+
+📩 <b>Message:</b>
+<i>${escapeHTML(rawSms)}</i>
+━━━━━━━━━━━━━━━━━━━━━━
+<i>🛡️ Automated Secure OTP System</i>`;
+
+            const payload = {
+                chat_id: APP_CONFIG.GROUP_CHAT_ID,
+                text: telegramMessage,
+                parse_mode: "HTML",
+                reply_markup: {
+                    inline_keyboard: [[{ text: APP_CONFIG.BUTTON_TEXT, url: APP_CONFIG.MINI_BOT_URL }]]
+                }
+            };
+
+            try {
+                const res = await fetch(`https://api.telegram.org/bot${APP_CONFIG.BOT_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) saveSentOtpKey(uniqueKey);
+            } catch (err) {
+                console.error("Telegram Request Error:", err);
+            }
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        function showError(msg) {
+            const banner = document.getElementById('error-banner');
+            const messageEl = document.getElementById('error-message');
+            if (banner && messageEl) {
+                banner.classList.remove('hidden');
+                messageEl.innerText = msg;
+            }
+        }
+
+        function extractOTP(sms) {
+            const match = sms.match(/\b\d{4,8}\b/);
+            return match ? match[0] : "------";
+        }
+
+        function getAppDetails(message) {
+            const lower = message.toLowerCase();
+            if (lower.includes("facebook") || lower.includes("fb")) {
+                return { name: "Facebook", icon: '<i class="fa-brands fa-facebook text-[#1877F2] text-sm animate-pulse"></i>', colorClass: 'text-[#1877F2]' };
+            } else if (lower.includes("instagram") || lower.includes("ig") || lower.includes("insta")) {
+                return { name: "Instagram", icon: '<i class="fa-brands fa-instagram text-[#E1306C] text-sm animate-pulse"></i>', colorClass: 'text-[#E1306C]' };
+            }
+            return { name: "Other Service", icon: '<i class="fa-solid fa-shield text-emerald-500 text-xs animate-pulse"></i>', colorClass: 'text-emerald-500' };
+        }
+
+        // দেশসমূহের প্রিফিক্স তালিকা
+        const countryCodes = {
+            "1242": "Bahamas 🇧🇸", "1246": "Barbados 🇧🇧", "1264": "Anguilla 🇦🇮", "1268": "Antigua and Barbuda 🇦🇬",
+            "1284": "British Virgin Islands 🇻🇬", "1345": "Cayman Islands 🇰🇾", "1441": "Bermuda 🇧🇲",
+            "1473": "Grenada 🇬🇩", "1649": "Turks and Caicos Islands 🇹🇨", "1664": "Montserrat 🇲🇸",
+            "1721": "Sint Maarten 🇸🇽", "1758": "Saint Lucia 🇱🇨", "1767": "Dominica 🇩🇲",
+            "1784": "Saint Vincent and the Grenadines 🇻🇨", "1809": "Dominican Republic 🇩🇴",
+            "1829": "Dominican Republic 🇩🇴", "1849": "Dominican Republic 🇩🇴", "1868": "Trinidad and Tobago 🇹🇹",
+            "1869": "Saint Kitts and Nevis 🇰🇳", "1876": "Jamaica 🇯🇲", "1658": "Jamaica 🇯🇲",
+            "211": "South Sudan 🇸🇸", "212": "Morocco 🇲🇦", "213": "Algeria 🇩🇿", "216": "Tunisia 🇹🇳",
+            "218": "Libya 🇱🇾", "220": "Gambia 🇬🇲", "221": "Senegal 🇸🇳", "222": "Mauritania 🇲🇷",
+            "223": "Mali 🇲🇱", "224": "Guinea 🇬🇳", "225": "Ivory Coast 🇨🇮", "226": "Burkina Faso 🇧🇫",
+            "227": "Niger 🇳🇪", "228": "Togo 🇹🇬", "229": "Benin 🇧🇯", "230": "Mauritius 🇲🇺",
+            "231": "Liberia 🇱🇷", "232": "Sierra Leone 🇸🇱", "233": "Ghana 🇬🇭", "234": "Nigeria 🇳🇬",
+            "235": "Chad 🇹🇩", "236": "Central African Republic 🇨🇫", "237": "Cameroon 🇨🇲",
+            "238": "Cape Verde 🇨🇻", "239": "Sao Tome and Principe 🇸🇹", "240": "Equatorial Guinea 🇬🇶",
+            "241": "Gabon 🇬🇦", "242": "Republic of the Congo 🇨🇬", "243": "DR Congo 🇨🇩",
+            "244": "Angola 🇦🇴", "245": "Guinea-Bissau 🇬🇼", "248": "Seychelles 🇸🇨",
+            "249": "Sudan 🇸🇩", "250": "Rwanda 🇷🇼", "251": "Ethiopia 🇪🇹", "252": "Somalia 🇸🇴",
+            "253": "Djibouti 🇩🇯", "254": "Kenya 🇰🇪", "255": "Tanzania 🇹🇿", "256": "Uganda 🇺🇬",
+            "257": "Burundi 🇧🇮", "258": "Mozambique 🇲🇿", "260": "Zambia 🇿🇲", "261": "Madagascar 🇲🇬",
+            "262": "Réunion / Mayotte 🇷🇪", "263": "Zimbabwe 🇿🇼", "264": "Namibia 🇳🇦",
+            "265": "Malawi 🇲🇼", "266": "Lesotho 🇱🇸", "267": "Botswana 🇧🇼", "268": "Eswatini 🇸🇿",
+            "269": "Comoros 🇰🇲", "290": "Saint Helena 🇸🇭", "291": "Eritrea 🇪🇷", "297": "Aruba 🇦🇼",
+            "298": "Faroe Islands 🇫🇴", "299": "Greenland 🇬🇱", "350": "Gibraltar 🇬🇮",
+            "351": "Portugal 🇵🇹", "352": "Luxembourg 🇱🇺", "353": "Ireland 🇮🇪", "354": "Iceland 🇮🇸",
+            "355": "Albania 🇦🇱", "356": "Malta 🇲🇹", "357": "Cyprus 🇨🇾", "358": "Finland 🇫🇮",
+            "359": "Bulgaria 🇧🇬", "370": "Lithuania 🇱🇹", "371": "Latvia 🇱🇻", "372": "Estonia 🇪🇪",
+            "373": "Moldova 🇲🇩", "374": "Armenia 🇦🇲", "375": "Belarus 🇧🇾", "376": "Andorra 🇦🇩",
+            "377": "Monaco 🇲🇨", "378": "San Marino 🇸🇲", "380": "Ukraine 🇺🇦", "381": "Serbia 🇷🇸",
+            "382": "Montenegro 🇲🇪", "383": "Kosovo 🇽🇰", "385": "Croatia 🇭🇷", "386": "Slovenia 🇸🇮",
+            "387": "Bosnia and Herzegovina 🇧🇦", "389": "North Macedonia 🇲🇰", "420": "Czech Republic 🇨🇿",
+            "421": "Slovakia 🇸🇰", "423": "Liechtenstein 🇱🇮", "501": "Belize 🇧🇿", "502": "Guatemala 🇬🇹",
+            "503": "El Salvador 🇸🇻", "504": "Honduras 🇭🇳", "505": "Nicaragua 🇳🇮", "506": "Costa Rica 🇨🇷",
+            "507": "Panama 🇵🇦", "508": "Saint Pierre and Miquelon 🇵🇲", "509": "Haiti 🇭🇹",
+            "590": "Guadeloupe 🇬🇵", "591": "Bolivia 🇧🇴", "592": "Guyana 🇬🇾", "593": "Ecuador 🇪🇨",
+            "594": "French Guiana 🇬🇫", "595": "Paraguay 🇵🇾", "596": "Martinique 🇲🇶",
+            "597": "Suriname 🇸🇷", "598": "Uruguay 🇺🇾", "599": "Curaçao 🇨🇼",
+            "670": "East Timor 🇹🇱", "672": "Norfolk Island 🇳🇫", "673": "Brunei 🇧🇳",
+            "674": "Nauru 🇳🇷", "675": "Papua New Guinea 🇵🇬", "676": "Tonga 🇹🇴", "677": "Solomon Islands 🇸🇧",
+            "678": "Vanuatu 🇻🇺", "679": "Fiji 🇫🇯", "680": "Palau 🇵🇼", "681": "Wallis and Futuna 🇼🇫",
+            "682": "Cook Islands 🇨🇰", "683": "Niue 🇳🇺", "685": "Samoa 🇼🇸", "686": "Kiribati 🇰🇮",
+            "687": "New Caledonia 🇳🇨", "688": "Tuvalu 🇹🇻", "689": "French Polynesia 🇵🇫",
+            "690": "Tokelau 🇹🇰", "691": "Micronesia 🇫🇲", "692": "Marshall Islands 🇲🇭",
+            "850": "North Korea 🇰🇵", "852": "Hong Kong 🇭🇰", "853": "Macau 🇲🇴", "855": "Cambodia 🇰🇭",
+            "856": "Laos 🇱🇦", "880": "Bangladesh 🇧🇩", "886": "Taiwan 🇹🇼", "960": "Maldives 🇲🇻",
+            "961": "Lebanon 🇱🇧", "962": "Jordan 🇯🇴", "963": "Syria 🇸🇾", "964": "Iraq 1964",
+            "965": "Kuwait 🇰🇼", "966": "Saudi Arabia 🇸🇦", "967": "Yemen 🇾🇪", "968": "Oman 🇴🇲",
+            "970": "Palestine 🇵🇸", "971": "UAE 🇦🇪", "972": "Israel 🇮🇱", "973": "Bahrain 🇧🇭",
+            "974": "Qatar 🇶🇦", "975": "Bhutan 🇧🇹", "976": "Mongolia 🇲🇳", "977": "Nepal 🇳🇵",
+            "992": "Tajikistan 🇹🇯", "993": "Turkmenistan 🇹🇲", "994": "Azerbaijan 🇦🇿",
+            "995": "Georgia 🇬🇪", "996": "Kyrgyzstan 🇰🇬", "998": "Uzbekistan 🇺🇿",
+            "20": "Egypt 🇪🇬", "27": "South Africa 🇿🇦", "30": "Greece 🇬🇷", "31": "Netherlands 🇳🇱",
+            "32": "Belgium 🇧🇪", "33": "France 🇫🇷", "34": "Spain 🇪🇸", "36": "Hungary 🇭🇺",
+            "39": "Italy 🇮🇹", "40": "Romania 🇷🇴", "41": "Switzerland 🇨🇭", "43": "Austria 🇦🇹",
+            "44": "United Kingdom 🇬🇧", "45": "Denmark 🇩🇰", "46": "Sweden 🇸🇪", "47": "Norway 🇳🇴",
+            "48": "Poland 🇵🇱", "49": "Germany 🇩🇪", "51": "Peru 🇵🇪", "52": "Mexico 🇲🇽",
+            "53": "Cuba 🇨🇺", "54": "Argentina 🇦🇷", "55": "Brazil 🇧🇷", "56": "Chile 🇨🇱",
+            "57": "Colombia 🇨🇴", "58": "Venezuela 🇻🇪", "60": "Malaysia 🇲🇾", "61": "Australia 🇦🇺",
+            "62": "Indonesia 🆔", "63": "Philippines 🇵🇭", "64": "New Zealand 🇳🇿",
+            "65": "Singapore 🇸🇬", "66": "Thailand 🇹🇭", "81": "Japan 🇯🇵", "82": "South Korea 🇰🇷",
+            "84": "Vietnam 🇻🇳", "86": "China 🇨🇳", "90": "Turkey 🇹🇷", "93": "Afghanistan 🇦🇫",
+            "94": "Sri Lanka 🇱🇰", "95": "Myanmar 🇲🇲", "98": "Iran 🇮🇷",
+            "1": "USA / Canada 🇺🇸", "7": "Russia / Kazakhstan 🇷🇺"
+        };
+
+        function getCountryByPrefix(number) {
+            if (!number) return "Global Route 🌐";
+            const clean = number.replace(/\D/g, '');
+            const sortedPrefixes = Object.keys(countryCodes).sort((a, b) => b.length - a.length);
+            
+            for (const prefix of sortedPrefixes) {
+                if (clean.startsWith(prefix)) {
+                    return countryCodes[prefix];
+                }
+            }
+            return "Global Route 🌐";
+        }
+
+        async function fetchLatestSMS() {
+            try {
+                // NP Network API endpoint: ?action=otp (অথবা success-otp)
+                const response = await fetch(`${APP_CONFIG.BASE_URL}?action=otp`, {
+                    method: 'GET',
+                    headers: { 'mauthapi': APP_CONFIG.API_TOKEN }
+                });
+                if (!response.ok) throw new Error(`HTTP Error! Status: ${response.status}`);
+                const result = await response.json();
+                
+                // NP Network API response format handling
+                let otpsArray = [];
+                if (result.data && result.data.otps) {
+                    otpsArray = result.data.otps;
+                } else if (Array.isArray(result)) {
+                    otpsArray = result;
+                }
+
+                renderSMSCards(otpsArray);
+
+                otpsArray.forEach(item => {
+                    const otp = extractOTP(item.message || "");
+                    if (otp && otp !== "------") {
+                        const appDetails = getAppDetails(item.message || "");
+                        const country = getCountryByPrefix(item.number || "");
+                        sendOtpToTelegram(item, otp, appDetails, country);
+                    }
+                });
+            } catch (error) {
+                console.error("Error fetching SMS from API:", error);
+                showError(error.message);
+            }
+        }
+
+        async function fetchConsoleTraffic() {
+            try {
+                const response = await fetch(`${APP_CONFIG.BASE_URL}?action=liveaccess`, {
+                    method: 'GET',
+                    headers: { 'mauthapi': APP_CONFIG.API_TOKEN }
+                });
+                if (!response.ok) throw new Error(`HTTP Error! Status: ${response.status}`);
+                const result = await response.json();
+                
+                let hits = [];
+                if (result.data && result.data.hits) {
+                    hits = result.data.hits;
+                } else if (Array.isArray(result)) {
+                    hits = result;
+                }
+                processConsoleData(hits);
+            } catch (error) {
+                console.error("Error fetching console traffic:", error);
+            }
+        }
+
+        function processConsoleData(hitsList) {
+            if (!hitsList) hitsList = [];
+            let fbCount = 0, igCount = 0, fbRanges = {}, igRanges = {};
+
+            hitsList.forEach(item => {
+                const sid = (item.sid || "").toLowerCase();
+                const message = (item.message || "").toLowerCase();
+                const range = item.range || "Unknown";
+
+                let isFB = message.includes('facebook') || message.includes('fb') || sid.includes('facebook') || sid.includes('fb');
+                let isIG = message.includes('instagram') || message.includes('ig') || message.includes('insta') || sid.includes('instagram') || sid.includes('ig');
+
+                if (isFB) {
+                    fbCount++;
+                    fbRanges[range] = (fbRanges[range] || 0) + 1;
+                } else if (isIG) {
+                    igCount++;
+                    igRanges[range] = (igRanges[range] || 0) + 1;
+                }
+            });
+
+            const total = fbCount + igCount;
+            let fbPercent = total > 0 ? Math.round((fbCount / total) * 100) : 0;
+            let igPercent = total > 0 ? Math.round((igCount / total) * 100) : 0;
+
+            activeFbRanges = Object.entries(fbRanges).sort((a, b) => b[1] - a[1]);
+            activeIgRanges = Object.entries(igRanges).sort((a, b) => b[1] - a[1]);
+
+            if (document.getElementById('fb-count-display')) document.getElementById('fb-count-display').innerText = fbCount;
+            if (document.getElementById('ig-count-display')) document.getElementById('ig-count-display').innerText = igCount;
+            if (document.getElementById('fb-percentage')) document.getElementById('fb-percentage').innerText = `${fbPercent}%`;
+            if (document.getElementById('ig-percentage')) document.getElementById('ig-percentage').innerText = `${igPercent}%`;
+            if (document.getElementById('fb-progress-line')) document.getElementById('fb-progress-line').style.width = `${fbPercent}%`;
+            if (document.getElementById('ig-progress-line')) document.getElementById('ig-progress-line').style.width = `${igPercent}%`;
+            if (document.getElementById('traffic-ratio')) document.getElementById('traffic-ratio').innerText = `Ratio: ${fbCount}:${igCount}`;
+        }
+
+        function renderSMSCards(smsList) {
+            const container = document.getElementById('feed-container');
+            const countBadge = document.getElementById('code-count');
+            const noDataEl = document.getElementById('no-data');
+            const loadingEl = document.getElementById('loading-state');
+            
+            if (loadingEl) loadingEl.classList.add('hidden');
+
+            if (!smsList || smsList.length === 0) {
+                if (noDataEl) noDataEl.classList.remove('hidden');
+                if (container) container.innerHTML = "";
+                if (countBadge) countBadge.innerText = "0 active codes";
+                return; 
+            }
+
+            if (noDataEl) noDataEl.classList.add('hidden');
+            let cardsHTML = "";
+
+            smsList.forEach(item => {
+                const number = item.number || "Unknown";
+                const rawSms = item.message || ""; 
+                const appDetails = getAppDetails(rawSms);
+                const otpCode = extractOTP(rawSms);
+                const country = getCountryByPrefix(number);
+
+                cardsHTML += `
+                    <div class="sms-card bg-[#11161B] border border-gray-800/80 hover:border-[#00A859]/30 rounded-xl p-5 relative overflow-hidden transition duration-300">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <span class="text-[10px] text-[#00A859] bg-[#00a85915] border border-[#00a85930] px-2.5 py-0.5 rounded font-bold uppercase tracking-wider">NP NETWORK ZONE</span>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                ${appDetails.icon}
+                                <span class="text-xs font-bold tracking-widest uppercase ${appDetails.colorClass}">${appDetails.name}</span>
+                            </div>
+                        </div>
+                        <div class="mb-4 flex flex-col gap-1">
+                            <p class="text-sm font-bold text-gray-200 tracking-wider">📱 ${number}</p>
+                            <p class="text-[11px] text-gray-500">Country: ${country}</p>
+                        </div>
+                        <div class="text-center my-5">
+                            <h2 class="text-3xl md:text-4xl font-black tracking-widest text-white">${otpCode}</h2>
+                        </div>
+                        <div class="bg-[#141A21] border border-emerald-950/50 rounded-lg p-3 text-center mb-4">
+                            <p class="text-xs text-emerald-500 font-mono tracking-wide leading-relaxed">${rawSms}</p>
+                        </div>
+                        <button onclick="navigator.clipboard.writeText('${otpCode}')" class="w-full bg-[#181E25] hover:bg-[#1C242C] border border-gray-800/80 text-xs font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition duration-200 text-gray-300">
+                            <i class="fa-regular fa-copy"></i> Copy Code
+                        </button>
+                    </div>
+                `;
+            });
+
+            if (container) container.innerHTML = cardsHTML;
+            if (countBadge) countBadge.innerText = `${smsList.length} codes today`;
+        }
+
+        window.onload = () => {
+            fetchLatestSMS();
+            fetchConsoleTraffic();
+            setInterval(() => {
+                fetchLatestSMS();
+                fetchConsoleTraffic();
+            }, 3000);
+        };
+    </script>
+</body>
+</html>
